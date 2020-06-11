@@ -260,12 +260,12 @@ class GameBoard
   def display_board
     puts "You have #{12 - @num_of_guesses} guesses left"
     puts "color codes:"
-    COLOR_CHOICES.each { |k, v| print "#{k} = #{v} : "}
+    COLOR_CHOICES.each { |k, v| print "#{k} = #{v} "}
     print "\n"
     #displays gameboard with - - - - for empty guesses
     #displays 12 lines
     #displays how many right colors/wrong spots and how many right colors/right spots on each line
-    @guesses.each { |guess| puts "| #{guess[0]} #{guess[1]} #{guess[2]} #{guess[3]} | Correct Colors: #{guess[4]} : Correctly Placed Colors #{guess[5]}" }
+    @guesses.each { |guess| puts "| #{guess[0]} #{guess[1]} #{guess[2]} #{guess[3]} | Correct Colors: #{guess[4]} | Correctly Placed Colors #{guess[5]} |" }
     
   end
 end
