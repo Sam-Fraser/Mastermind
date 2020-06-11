@@ -7,6 +7,38 @@ COLOR_CHOICES = {
   wh: 'white'
 }
 
+#module for human input of a code
+module Human
+
+  def ask_for_input(input)
+    #makes input blank array
+    input = []
+    i = 1
+    #repeats until 4 correct codes are input
+    loop do
+      #puts message asking for guess 1,2,3,4
+      print "Enter color code ##{i}: "
+      #gets guess and pushes to guess array
+      entry = gets.chomp.downcase
+      #check for valid guess
+      if valid_code?(entry)
+        input.push(entry)
+        i += 1
+      else
+        puts "not a valid color code. Try again."
+      end
+      break if i > 4
+    end
+    input
+  end
+
+  #check if valid color code
+  def valid_code?(code)
+    COLOR_CHOICES.any? { |k, v| k.to_s == code}
+  end
+
+end
+
 #game class that runs the game
 class Game
 
@@ -22,6 +54,34 @@ class Game
 
   #play method
   def play
+    loop do
+      puts "Do you want to play as the code master or the code breaker?"
+      print "(type 'M' for master and 'B' for breaker) "
+      selection = gets.chomp.downcase
+      print "\n"
+
+      case selection
+      when 'm'
+        play_as_master
+        break
+      when 'b'
+        @code_master = ComputerMaster.new
+        @code_breaker = HumanBreaker.new(@board)
+        play_as_breaker
+        break
+      else
+        puts "That is not a valid entry. Try again."
+      end
+    end
+  end
+
+  #play as master method (you create code, computer guesses)
+  def play_as_master
+
+  end
+
+  #play as breaker method (computer creates code, you guess code)
+  def play_as_breaker
     #calls blank gameboard
     @board.display_board
     #gets new codemaster code
@@ -31,25 +91,19 @@ class Game
       #gets codebreaker guess
       @code_breaker.ask_for_guess
       #checks against codemaster code
-      #returns how many choices are right color
-      correct_color = num_with_correct_color(@code_master.code, @code_breaker.guess)
-      #returns how many choices are in the right place
-      correct_position = num_in_correct_position(@code_master.code, @code_breaker.guess)
-      correct_color -= correct_position
-      #updates gameboard
-      @board.save_correct_answers(correct_color, correct_position)
+      check_code(@code_master.code, @code_breaker.guess)
       #prints gameboard
       @board.display_board
       #breaks if codebreaker guess = codemaster code
       if correct_code?(@code_master.code, @code_breaker.guess)
-        puts "Congrats you win! The Code was #{@code_master.code.join(' ')}"
+        puts "Congrats you win! The Code was #{@code_master.get_color_names}"
         break
       end
       #increments guess counter
       @board.count_guess
     end
     if @board.num_of_guesses == 12
-      puts "Looks like you lost. Here was the code dummy: #{@code_master.code.join(' ')}"
+      puts "Looks like you lost. Here was the code dummy: #{@code_master.get_color_names}"
     end
   end
 
@@ -72,6 +126,17 @@ class Game
     x
   end
 
+  #checks guess against code and saves to board
+  def check_code(code, guess)
+    #returns how many choices are right color
+    correct_color = num_with_correct_color(code, guess)
+    #returns how many choices are in the right place
+    correct_position = num_in_correct_position(code, guess)
+    correct_color -= correct_position
+    #updates gameboard
+    @board.save_correct_answers(correct_color, correct_position)
+  end
+
   #checks if correct code was input
   def correct_code?(code, guess)
     code == guess[0, 4]
@@ -92,6 +157,20 @@ class CodeMaster
     @code = []
   end
 
+  #changes the color codes to names for better output at game end
+  def get_color_names
+    @code.each_with_index do |v, i|
+      v = COLOR_CHOICES[v.to_sym]
+      @code[i] = v.capitalize
+    end
+    @code.join(' ')
+  end
+end
+
+#methods only available when the computer is the code master
+class ComputerMaster < CodeMaster
+  attr_reader :code
+
   #create method
   def create_code
     #chooses 4 colors at random from colors array
@@ -100,6 +179,17 @@ class CodeMaster
       #save in code variable
       @code.push(CHOICES[i].to_s)
     end 
+  end
+end
+
+#methods only available when you are the code master
+class HumanMaster < CodeMaster
+  include Human
+  attr_reader :code
+
+  #create method
+  def ask_for_code
+    @code = ask_for_input(@code)
   end
 end
 
@@ -115,34 +205,21 @@ class CodeBreaker
     #gameboard
     @board = board
   end
+end
 
-  #ask for guess method
+#methods only available when the computer is the breaker
+class ComputerBreaker < CodeBreaker
+
+end
+
+#methods only available when you're the code breaker
+class HumanBreaker < CodeBreaker
+  include Human
+  attr_reader :guess
+
   def ask_for_guess
-    #makes guess blank array
-    @guess = []
-    i = 1
-    #repeats until 4 correct codes are input
-    loop do
-      #puts message asking for guess 1,2,3,4
-      print "Enter color code ##{i}: "
-      #gets guess and pushes to guess array
-      entry = gets.chomp.downcase
-      #check for valid guess
-      if valid_code?(entry)
-        @guess.push(entry)
-        i += 1
-      else
-        puts "not a valid color code. Try again."
-      end
-      break if i > 4
-    end
+    @guess = ask_for_input(@guess)
     @board.save_guess(@guess)
-    p @guess
-  end
-
-  #check if valid color code
-  def valid_code?(code)
-    COLOR_CHOICES.any? { |k, v| k.to_s == code}
   end
 end
 
@@ -156,6 +233,13 @@ class GameBoard
     @guesses = Array.new(12, Array.new(6, '--'))
     #number of guesses
     @num_of_guesses = 0
+    #master code
+    @master_code = []
+  end
+
+  #save code method
+  def save_code(code)
+    @master_code = code
   end
 
   #save guess method
@@ -185,6 +269,3 @@ class GameBoard
     
   end
 end
-
-g = Game.new
-g.play
